@@ -1,0 +1,105 @@
+---
+title: "Swing for Offense"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r}
+require(dplyr)
+require(stringr)
+require(randomForest)
+require(corrplot)
+require(ggplot2)
+library(dplyr)
+library(stringr)
+library(randomForest)
+library(corrplot)
+library(ggplot2)
+```
+
+```{r}
+url <- "https://raw.githubusercontent.com/Chrisboatto/Swing-for-Offense/main/MLB%20Hitters%20stats.csv"
+```
+
+```{r}
+MLBHittersStats <- read.csv(url)
+```
+
+```{r}
+str(MLBHittersStats)
+```
+
+```{r}
+summary(MLBHittersStats)
+```
+
+```{r}
+sum(is.na(MLBHittersStats))
+```
+
+```{r}
+MLBHittersStats$BB. <- as.numeric(sub("%", "", MLBHittersStats$BB.))/100
+
+MLBHittersStats$K. <- as.numeric(sub("%", "", MLBHittersStats$K.))/100
+
+MLBHittersStats$LD. <- as.numeric(sub("%", "", MLBHittersStats$LD.))/100
+MLBHittersStats$GB. <- as.numeric(sub("%", "", MLBHittersStats$GB.))/100
+MLBHittersStats$FB. <- as.numeric(sub("%", "", MLBHittersStats$FB.))/100
+MLBHittersStats$Hard. <- as.numeric(sub("%", "", MLBHittersStats$Hard.))/100
+MLBHittersStats$Med. <- as.numeric(sub("%", "", MLBHittersStats$Med.))/100
+MLBHittersStats$Soft. <- as.numeric(sub("%", "", MLBHittersStats$Soft.))/100
+MLBHittersStats$Z.Contact. <- as.numeric(sub("%", "", MLBHittersStats$Z.Contact.))/100
+MLBHittersStats$Z.Swing. <- as.numeric(sub("%", "", MLBHittersStats$Z.Swing.))/100
+MLBHittersStats$O.Swing. <- as.numeric(sub("%", "", MLBHittersStats$O.Swing.))/100
+MLBHittersStats$Oppo. <- as.numeric(sub("%", "", MLBHittersStats$Oppo.))/100
+MLBHittersStats$Cent. <- as.numeric(sub("%", "", MLBHittersStats$Cent.))/100
+MLBHittersStats$Pull. <- as.numeric(sub("%", "", MLBHittersStats$Pull.))/100
+MLBHittersStats$O.Contact. <- as.numeric(sub("%", "", MLBHittersStats$O.Contact.))/100
+MLBHittersStats$Swing. <- as.numeric(sub("%", "", MLBHittersStats$Swing.))/100
+
+percentage_to_numeric <- function(x) {
+  if (x == grepl("%")){
+    sub("%", "", x) / 100
+  }
+    
+}
+
+MLBHittersStats <- percentage_to_numeric(ncol(MLBHittersStats))
+```
+
+```{r}
+HittingCor <- cor(MLBHittersStats[9:39])
+corrplot(HittingCor, type = "upper", order = 'hclust', tl.col = 'red')
+```
+
+```{r}
+ggplot(MLBHittersStats) +
+  geom_point(aes(x = Pull., y = wRC., colour = 'Pull.'), size = 1) + 
+  geom_point(aes(x = Oppo., y = wRC., colour = 'Oppo.'), size = 1) + 
+  geom_point(aes(x = Cent., y = wRC., colour = 'Cent.'), size = 1) +
+  geom_smooth(aes(x = Pull., y = wRC.), method = "auto", level = 0.9, colour = "Blue") + 
+  geom_smooth(aes(x = Oppo., y = wRC.), method = "auto", level = 0.9, colour = "green") + 
+  geom_smooth(aes(x = Cent., y = wRC.), method = "auto", level = 0.9, colour = "red") +
+  labs(title = "Direction of Batted Ball to Offense Correlation", subtitle = "2019 MLB Season (Qualified At Bats)", x = "Direction of Hit", y = "wRC+", colour = "Batted Balls")
+```
+
+```{r}
+ggplot(MLBHittersStats) +
+  geom_point(aes(x = Pull., y = Hard., colour = 'Pull.'), size = 1) + 
+  geom_point(aes(x = Oppo., y = Hard., colour = 'Oppo.'), size = 1) + 
+  geom_point(aes(x = Cent., y = Hard., colour = 'Cent.'), size = 1) +
+  geom_smooth(aes(x = Pull., y = Hard.), method = "auto", level = 0.9, colour = "Blue") + 
+  geom_smooth(aes(x = Oppo., y = Hard.), method = "auto", level = 0.9, colour = "green") + 
+  geom_smooth(aes(x = Cent., y = Hard.), method = "auto", level = 0.9, colour = "red") +
+  labs(title = "Direction of Batted Ball to Offense Correlation", subtitle = "2019 MLB Season (Qualified At Bats)", x = "Direction of Hit", y = "Hard Hit %", colour = "Batted Balls")
+```
+
