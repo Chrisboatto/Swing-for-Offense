@@ -66,14 +66,7 @@ MLBHittersStats$Pull. <- as.numeric(sub("%", "", MLBHittersStats$Pull.))/100
 MLBHittersStats$O.Contact. <- as.numeric(sub("%", "", MLBHittersStats$O.Contact.))/100
 MLBHittersStats$Swing. <- as.numeric(sub("%", "", MLBHittersStats$Swing.))/100
 
-percentage_to_numeric <- function(x) {
-  if (x == grepl("%")){
-    sub("%", "", x) / 100
-  }
-    
-}
-
-MLBHittersStats <- percentage_to_numeric(ncol(MLBHittersStats))
+MLBHittersStats <- rename(MLBHittersStats, Name = ï..Name)
 ```
 
 ```{r}
@@ -101,5 +94,80 @@ ggplot(MLBHittersStats) +
   geom_smooth(aes(x = Oppo., y = Hard.), method = "auto", level = 0.9, colour = "green") + 
   geom_smooth(aes(x = Cent., y = Hard.), method = "auto", level = 0.9, colour = "red") +
   labs(title = "Direction of Batted Ball to Offense Correlation", subtitle = "2019 MLB Season (Qualified At Bats)", x = "Direction of Hit", y = "Hard Hit %", colour = "Batted Balls")
+```
+
+```{r}
+set.seed(9816)
+train <- sample(nrow(MLBHittersStats), 0.80*nrow(MLBHittersStats), replace = FALSE)
+trainSet <- MLBHittersStats[train,]
+testSet <- MLBHittersStats[-train,]
+```
+
+```{r}
+baseModel <- randomForest(wRC. ~ ., data = trainSet, ntree = 50)
+```
+
+```{r}
+baseIMP <- importance(baseModel)
+baseIMP
+```
+
+```{r}
+baseIMP <- as.data.frame(baseIMP)
+
+ggplot(baseIMP, aes(IncNodePurity, row.names(baseIMP))) + 
+  geom_bar(stat = "identity", width = 0.1, fill = "black") + 
+  geom_point(shape = 21, size = 3, colour = "red", fill = "blue", stroke = 2) + 
+  labs(title = "Direction to Offense", x = "Importance", y = "Variable")
+```
+
+```{r}
+plot(baseModel, col = "red", main = "Base Model Error Chart")
+```
+
+```{r}
+newModel <- randomForest(wRC. ~ Pull. + Oppo. + Cent. + GB. + FB. + LD. + Hard. + Soft. + Med., data = trainSet, ntree = 50)
+```
+
+```{r}
+wRCTrain <- predict(newModel, trainSet, type = "response")
+wRCTest <- predict(newModel, testSet, type = "response")
+```
+
+```{r}
+trainSet <- cbind(trainSet, wRCTrain)
+testSet <- cbind(testSet, wRCTest)
+```
+
+```{r}
+names(trainSet)[names(trainSet) == "wRCTrain"] <- "wRCPred"
+names(testSet)[names(testSet) == "wRCTest"] <- "wRCPred"
+```
+
+```{r}
+wRCFull <- rbind(trainSet, testSet)
+```
+
+```{r}
+plot(newModel, col = "red", main = "New Model Error Chart")
+```
+
+```{r}
+newIMP <- importance(newModel)
+newIMP
+
+newIMP <- as.data.frame(newIMP)
+ggplot(newIMP, aes(IncNodePurity, row.names(newIMP))) + 
+  geom_bar(stat = "identity", width = 0.1, fill = "red") + 
+  geom_point(shape = 21, size = 3, colour = "black", fill = "blue", stroke = 2) + 
+  labs(title = "Direction to Offense", x = "Importance", y = "Variable")
+```
+
+```{r}
+wRCFull <- wRCFull %>% mutate(wRCDiff = wRCPred - wRC.) %>% select(c(Name, wRC., wRCPred, wRCDiff, Cent., Pull., Oppo.))
+```
+
+```{r}
+wRCFull[order(-wRCFull$wRCDiff),]
 ```
 
