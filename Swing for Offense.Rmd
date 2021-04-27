@@ -13,18 +13,26 @@ This is an R Markdown document. Markdown is a simple formatting syntax for autho
 
 When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
 
+# In this assignment I sought out to determine if using the entire field would be a majojr contributor to offensive production in baseball. The thought is that if a hitter is able to hit the ball consistently to left field, center field and right field it would be increasingly difficult to defend against him. With more and more teams employing defensive shifts to improve their defensive production I wondered why more batters do not take advantage of open space on the field. 
+
+# The following are the packages needed to perform this discovery.
+
 ```{r}
 require(dplyr)
 require(stringr)
 require(randomForest)
 require(corrplot)
 require(ggplot2)
+require(pROC)
 library(dplyr)
 library(stringr)
 library(randomForest)
 library(corrplot)
 library(ggplot2)
+library(pROC)
 ```
+
+# I pulled a data set from Fangraphs.com and uploaded it to my GitHub. I then imported the site to which the data is stored into the machine and read it into a CSV.
 
 ```{r}
 url <- "https://raw.githubusercontent.com/Chrisboatto/Swing-for-Offense/main/MLB%20Hitters%20stats.csv"
@@ -34,6 +42,8 @@ url <- "https://raw.githubusercontent.com/Chrisboatto/Swing-for-Offense/main/MLB
 MLBHittersStats <- read.csv(url)
 ```
 
+# I checked the structure and summary of the data set. Notice how some attributes are character symbols because of the '%.' This will have to be ammended into a regular decimal.
+
 ```{r}
 str(MLBHittersStats)
 ```
@@ -41,16 +51,18 @@ str(MLBHittersStats)
 ```{r}
 summary(MLBHittersStats)
 ```
+# Checking to see if there are any NA values. This data set has none and after looking through the structure and summary, the data set looks pretty clean already.
 
 ```{r}
 sum(is.na(MLBHittersStats))
 ```
+# This is where I began my ammending of the character attributes that contained character symbols. I fixed them in an individual fashion but I know there is an easier way to do this with some sort of function. That is the next thing I must learn.
+
+# I then changed the header of the i..Name attribute to just Name for simplicity's sake and created a separate attribute called 'BinaryOffense' to show in binary fashion if the player was above average or not. This would allow for a much easier model creation to predict and fix if the error messages are too high.
 
 ```{r}
 MLBHittersStats$BB. <- as.numeric(sub("%", "", MLBHittersStats$BB.))/100
-
 MLBHittersStats$K. <- as.numeric(sub("%", "", MLBHittersStats$K.))/100
-
 MLBHittersStats$LD. <- as.numeric(sub("%", "", MLBHittersStats$LD.))/100
 MLBHittersStats$GB. <- as.numeric(sub("%", "", MLBHittersStats$GB.))/100
 MLBHittersStats$FB. <- as.numeric(sub("%", "", MLBHittersStats$FB.))/100
@@ -66,13 +78,19 @@ MLBHittersStats$Pull. <- as.numeric(sub("%", "", MLBHittersStats$Pull.))/100
 MLBHittersStats$O.Contact. <- as.numeric(sub("%", "", MLBHittersStats$O.Contact.))/100
 MLBHittersStats$Swing. <- as.numeric(sub("%", "", MLBHittersStats$Swing.))/100
 
-MLBHittersStats <- rename(MLBHittersStats, Name = ï..Name)
+MLBHittersStats <-  MLBHittersStats %>% rename(Name = ï..Name) %>% mutate(BinaryOffense = case_when(wRC. > 100 ~ 1, wRC. < 101 ~ 0))
 ```
+
+# I decided to create a correlation plot to futher understand the importances of each attribute to each other. I noticed that a lot of the offensive statistics correlated strongly to Wins Above Replacement (WAR) which is a stat that tells you how much better an MLB player is that a AAA player based on a Win total. A lot of the offensive metrics are intertwined which makes sense as most statistics are included in other formulas. For instance,On Base Plus Slugging (OPS.) is your On Base + Slugging, and On Base (OBP) is the amount of times a batter gets on base divided by his number of at bats. A batter's average (AVG) is how many hits divided by at bats. OBP includes hits, walks, hit by pitches, intentional walks etc. so AVG is a part of OBP which is half the formula for OPS. It is all intertwined.
 
 ```{r}
 HittingCor <- cor(MLBHittersStats[9:39])
 corrplot(HittingCor, type = "upper", order = 'hclust', tl.col = 'red')
 ```
+
+# The below chart shows the correlation of batted ball direction to an offensive metric Weighted Runc Created Plus (wRC+.) This metric shows how well an individual does based on the average of MLB players while adjusting for the park that the hitter plays in. Some baseball parks are more advantageous for offense and some for defense. This metric does a great job at removing the extraneous factors and looks at the hitter in a vaccuum. 
+
+# As you can see there really is no solid correlation but there is a better result for pulling the baseball. Most batter's power is to the pull side. This would go towards the idea of just hitting the ball hard rather than to a specific location.
 
 ```{r}
 ggplot(MLBHittersStats) +
@@ -85,6 +103,8 @@ ggplot(MLBHittersStats) +
   labs(title = "Direction of Batted Ball to Offense Correlation", subtitle = "2019 MLB Season (Qualified At Bats)", x = "Direction of Hit", y = "wRC+", colour = "Batted Balls")
 ```
 
+# Much like above this chart shows the correlation to balls hit hard in reference to their field position. As you can see there is a massive spike to the pull side of the field. 
+
 ```{r}
 ggplot(MLBHittersStats) +
   geom_point(aes(x = Pull., y = Hard., colour = 'Pull.'), size = 1) + 
@@ -96,6 +116,8 @@ ggplot(MLBHittersStats) +
   labs(title = "Direction of Batted Ball to Offense Correlation", subtitle = "2019 MLB Season (Qualified At Bats)", x = "Direction of Hit", y = "Hard Hit %", colour = "Batted Balls")
 ```
 
+# I began my model creation by creating train and test sets based off an 80:20 ratio.
+
 ```{r}
 set.seed(9816)
 train <- sample(nrow(MLBHittersStats), 0.80*nrow(MLBHittersStats), replace = FALSE)
@@ -103,9 +125,13 @@ trainSet <- MLBHittersStats[train,]
 testSet <- MLBHittersStats[-train,]
 ```
 
+# I created a base model to gain an initial understanding of how a random forest model would react to this data set. I want to know which attributes would take over the model. Those would be removed from the model unless they are essential to the hypothesis.
+
 ```{r}
-baseModel <- randomForest(wRC. ~ ., data = trainSet, ntree = 50)
+baseModel <- randomForest(BinaryOffense ~ ., data = trainSet, ntree = 50)
 ```
+
+# As you can see in the chart and graph below there were a few metrics that just took over the model. Those attributes were removed from the improved model to gain a more fair result when predicting occurs.
 
 ```{r}
 baseIMP <- importance(baseModel)
@@ -121,36 +147,47 @@ ggplot(baseIMP, aes(IncNodePurity, row.names(baseIMP))) +
   labs(title = "Direction to Offense", x = "Importance", y = "Variable")
 ```
 
+# The plot below shows the error message that the model was producing us. The errors seem a but high therefore in the tuned model the number of trees will have to be increased.
+
 ```{r}
 plot(baseModel, col = "red", main = "Base Model Error Chart")
 ```
 
+# I created the new model based on the three fields the ball can be hit to, the three types of balls to be put into play and the three groupings of contact speed. This was done because you can hit the ball to any field at any speed and in any way. I found it pertinent that all nine should be added in along with the amount of swings and strikeouts a batter takes throughout the season.
+
+# I then predicted based on the 'response' method because I wanted an actual result versus a number assigned to each observation using classification.
+
 ```{r}
-newModel <- randomForest(wRC. ~ Pull. + Oppo. + Cent. + GB. + FB. + LD. + Hard. + Soft. + Med., data = trainSet, ntree = 50)
+newModel <- randomForest(BinaryOffense ~ Pull. + Oppo. + Cent. + GB. + FB. + LD. + Hard. + Soft. + Med. + Swing. + K., data = trainSet, ntree = 100, maxnodes = 30)
 ```
 
 ```{r}
-wRCTrain <- predict(newModel, trainSet, type = "response")
-wRCTest <- predict(newModel, testSet, type = "response")
+OffenseTrain <- predict(newModel, trainSet, type = "response")
+OffenseTest <- predict(newModel, testSet, type = "response")
+```
+
+# I bound the predictive scores to their respective sets as an additional attribute. Changed their names to match and then bound both data sets together again. 
+
+```{r}
+trainSet <- cbind(trainSet, OffenseTrain)
+testSet <- cbind(testSet, OffenseTest)
 ```
 
 ```{r}
-trainSet <- cbind(trainSet, wRCTrain)
-testSet <- cbind(testSet, wRCTest)
+names(trainSet)[names(trainSet) == "OffenseTrain"] <- "OffensePred"
+names(testSet)[names(testSet) == "OffenseTest"] <- "OffensePred"
 ```
 
 ```{r}
-names(trainSet)[names(trainSet) == "wRCTrain"] <- "wRCPred"
-names(testSet)[names(testSet) == "wRCTest"] <- "wRCPred"
+OffenseFull <- rbind(trainSet, testSet)
 ```
 
-```{r}
-wRCFull <- rbind(trainSet, testSet)
-```
+# This error plot is much better than the one above. Error distribution flatlines around 80 trees so 100 seemed to be a good number here.
 
 ```{r}
 plot(newModel, col = "red", main = "New Model Error Chart")
 ```
+# The new model has an even distribution of the attributes within it. Therefore no one attribute took over the model.
 
 ```{r}
 newIMP <- importance(newModel)
@@ -163,11 +200,23 @@ ggplot(newIMP, aes(IncNodePurity, row.names(newIMP))) +
   labs(title = "Direction to Offense", x = "Importance", y = "Variable")
 ```
 
+# The ROC graph below shows the model worded 
+
 ```{r}
-wRCFull <- wRCFull %>% mutate(wRCDiff = wRCPred - wRC.) %>% select(c(Name, wRC., wRCPred, wRCDiff, Cent., Pull., Oppo.))
+roc_test <- roc(ifelse(testSet$BinaryOffense == "1", "1", "0"), as.numeric(testSet$OffensePred))
+roc_train <- roc(ifelse(trainSet$OffensePred == "1", "1", "0"), as.numeric(trainSet$OffensePred))
+plot(roc_test, col = "blue", main = "Offense ROC Graph")
+lines(roc_train, col = "green")
+```
+
+
+# I then created an attribute that shows the difference between the prediction and the original BinaryOffense attribute. It shows what the model would have expected the players offensive output to be based on the parameters in the model.
+
+```{r}
+OffenseFull <- OffenseFull %>% mutate(OffenseDiff = OffensePred - BinaryOffense) %>% select(c(Name, wRC., BinaryOffense, OffensePred, OffenseDiff, Cent., Pull., Oppo.))
 ```
 
 ```{r}
-wRCFull[order(-wRCFull$wRCDiff),]
+OffenseFull[order(-OffenseFull$OffensePred),]
 ```
 
