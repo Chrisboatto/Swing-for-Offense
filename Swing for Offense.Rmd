@@ -20,13 +20,13 @@ When you click the **Knit** button a document will be generated that includes bo
 ```{r}
 require(dplyr)
 require(stringr)
-require(randomForest)
+require(rpart)
 require(corrplot)
 require(ggplot2)
 require(pROC)
 library(dplyr)
 library(stringr)
-library(randomForest)
+library(rpart)
 library(corrplot)
 library(ggplot2)
 library(pROC)
@@ -128,29 +128,23 @@ testSet <- MLBHittersStats[-train,]
 # I created a base model to gain an initial understanding of how a random forest model would react to this data set. I want to know which attributes would take over the model. Those would be removed from the model unless they are essential to the hypothesis.
 
 ```{r}
-baseModel <- randomForest(BinaryOffense ~ ., data = trainSet, ntree = 50)
+baseModel <- rpart(BinaryOffense ~ ., data = trainSet, method = 'class')
 ```
 
 # As you can see in the chart and graph below there were a few metrics that just took over the model. Those attributes were removed from the improved model to gain a more fair result when predicting occurs.
 
 ```{r}
-baseIMP <- importance(baseModel)
+baseIMP <- varImp(baseModel)
 baseIMP
 ```
 
 ```{r}
 baseIMP <- as.data.frame(baseIMP)
 
-ggplot(baseIMP, aes(IncNodePurity, row.names(baseIMP))) + 
+ggplot(baseIMP, aes(Overall, row.names(baseIMP))) + 
   geom_bar(stat = "identity", width = 0.1, fill = "black") + 
   geom_point(shape = 21, size = 3, colour = "red", fill = "blue", stroke = 2) + 
   labs(title = "Direction to Offense", x = "Importance", y = "Variable")
-```
-
-# The plot below shows the error message that the model was producing us. The errors seem a but high therefore in the tuned model the number of trees will have to be increased.
-
-```{r}
-plot(baseModel, col = "red", main = "Base Model Error Chart")
 ```
 
 # I created the new model based on the three fields the ball can be hit to, the three types of balls to be put into play and the three groupings of contact speed. This was done because you can hit the ball to any field at any speed and in any way. I found it pertinent that all nine should be added in along with the amount of swings and strikeouts a batter takes throughout the season.
@@ -158,12 +152,12 @@ plot(baseModel, col = "red", main = "Base Model Error Chart")
 # I then predicted based on the 'response' method because I wanted an actual result versus a number assigned to each observation using classification.
 
 ```{r}
-newModel <- randomForest(BinaryOffense ~ Pull. + Oppo. + Cent. + GB. + FB. + LD. + Hard. + Soft. + Med. + Swing. + K., data = trainSet, ntree = 100, maxnodes = 30)
+newModel <- rpart(BinaryOffense ~ Pull. + Oppo. + Cent. + GB. + FB. + LD. + Hard. + Soft. + Med. + O.Swing. + K. + Z.Swing. + O.Contact. + Z.Contact. + BB., data = trainSet, method = 'class')
 ```
 
 ```{r}
-OffenseTrain <- predict(newModel, trainSet, type = "response")
-OffenseTest <- predict(newModel, testSet, type = "response")
+OffenseTrain <- predict(newModel, trainSet, type = "vector")
+OffenseTest <- predict(newModel, testSet, type = "vector")
 ```
 
 # I bound the predictive scores to their respective sets as an additional attribute. Changed their names to match and then bound both data sets together again. 
@@ -182,19 +176,14 @@ names(testSet)[names(testSet) == "OffenseTest"] <- "OffensePred"
 OffenseFull <- rbind(trainSet, testSet)
 ```
 
-# This error plot is much better than the one above. Error distribution flatlines around 80 trees so 100 seemed to be a good number here.
-
-```{r}
-plot(newModel, col = "red", main = "New Model Error Chart")
-```
 # The new model has an even distribution of the attributes within it. Therefore no one attribute took over the model.
 
 ```{r}
-newIMP <- importance(newModel)
+newIMP <- varImp(newModel)
 newIMP
 
 newIMP <- as.data.frame(newIMP)
-ggplot(newIMP, aes(IncNodePurity, row.names(newIMP))) + 
+ggplot(newIMP, aes(Overall, row.names(newIMP))) + 
   geom_bar(stat = "identity", width = 0.1, fill = "red") + 
   geom_point(shape = 21, size = 3, colour = "black", fill = "blue", stroke = 2) + 
   labs(title = "Direction to Offense", x = "Importance", y = "Variable")
@@ -204,7 +193,7 @@ ggplot(newIMP, aes(IncNodePurity, row.names(newIMP))) +
 
 ```{r}
 roc_test <- roc(ifelse(testSet$BinaryOffense == "1", "1", "0"), as.numeric(testSet$OffensePred))
-roc_train <- roc(ifelse(trainSet$OffensePred == "1", "1", "0"), as.numeric(trainSet$OffensePred))
+roc_train <- roc(ifelse(trainSet$BinaryOffense == "1", "1", "0"), as.numeric(trainSet$OffensePred))
 plot(roc_test, col = "blue", main = "Offense ROC Graph")
 lines(roc_train, col = "green")
 ```
