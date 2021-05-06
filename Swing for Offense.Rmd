@@ -100,7 +100,7 @@ ggplot(MLBHittersStats) +
   geom_smooth(aes(x = Pull., y = wRC.), method = "auto", level = 0.9, colour = "Blue") + 
   geom_smooth(aes(x = Oppo., y = wRC.), method = "auto", level = 0.9, colour = "green") + 
   geom_smooth(aes(x = Cent., y = wRC.), method = "auto", level = 0.9, colour = "red") +
-  labs(title = "Direction of Batted Ball to Offense Correlation", subtitle = "2019 MLB Season (Qualified At Bats)", x = "Direction of Hit", y = "wRC+", colour = "Batted Balls")
+  labs(title = "Direction of Batted Ball to Offense Correlation", subtitle = "2019 MLB Season (Qualified At Bats)", x = "Percentage of Direction of Hit", y = "wRC+", colour = "Batted Balls")
 ```
 
 # Much like above this chart shows the correlation to balls hit hard in reference to their field position. As you can see there is a massive spike to the pull side of the field. 
@@ -113,7 +113,7 @@ ggplot(MLBHittersStats) +
   geom_smooth(aes(x = Pull., y = Hard.), method = "auto", level = 0.9, colour = "Blue") + 
   geom_smooth(aes(x = Oppo., y = Hard.), method = "auto", level = 0.9, colour = "green") + 
   geom_smooth(aes(x = Cent., y = Hard.), method = "auto", level = 0.9, colour = "red") +
-  labs(title = "Direction of Batted Ball to Offense Correlation", subtitle = "2019 MLB Season (Qualified At Bats)", x = "Direction of Hit", y = "Hard Hit %", colour = "Batted Balls")
+  labs(title = "Direction of Batted Ball to Hard Hit Correlation", subtitle = "2019 MLB Season (Qualified At Bats)", x = "Percentage of Direction of Hit", y = "Hard Hit %", colour = "Batted Balls")
 ```
 
 # I began my model creation by creating train and test sets based off an 80:20 ratio.
