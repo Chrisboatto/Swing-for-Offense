@@ -116,6 +116,21 @@ ggplot(MLBHittersStats) +
   labs(title = "Direction of Batted Ball to Hard Hit Correlation", subtitle = "2019 MLB Season (Qualified At Bats)", x = "Percentage of Direction of Hit", y = "Hard Hit %", colour = "Batted Balls")
 ```
 
+```{r}
+ggplot(MLBHittersStats) +
+  geom_point(aes(x = Hard., y = Swing., color = 'Hard.'), size = 1) + 
+  geom_smooth(aes(x = Hard., y = Swing.), method = 'auto', level = 0.9, color = "red") + 
+  labs(title = "Swing Percentage to Hard Contact", subtitle = "2019 MLB Season (Qualified At Bats)", x = "Hard Contact Percentage", y = "Swing Percentage")
+```
+
+```{r}
+ggplot(MLBHittersStats) +
+  geom_point(aes(x = Swing., y = wRC., color = 'wRC.'), size = 1) + 
+  geom_smooth(aes(x = Swing., y = wRC.), method = 'auto', level = 0.9, color = "green") + 
+  labs(title = "Swing Percentage to Offensive Output", subtitle = "2019 MLB Season (Qualified At Bats)", x = "Swing Percentage", y = "Offesnive Output")
+```
+
+
 # I began my model creation by creating train and test sets based off an 80:20 ratio.
 
 ```{r}
