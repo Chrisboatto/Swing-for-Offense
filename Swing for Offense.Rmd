@@ -118,9 +118,9 @@ ggplot(MLBHittersStats) +
 
 ```{r}
 ggplot(MLBHittersStats) +
-  geom_point(aes(x = Hard., y = Swing., color = 'Hard.'), size = 1) + 
-  geom_smooth(aes(x = Hard., y = Swing.), method = 'auto', level = 0.9, color = "red") + 
-  labs(title = "Swing Percentage to Hard Contact", subtitle = "2019 MLB Season (Qualified At Bats)", x = "Hard Contact Percentage", y = "Swing Percentage")
+  geom_point(aes(x = Swing., y = Hard., color = 'Hard.'), size = 1) + 
+  geom_smooth(aes(x = Swing., y = Hard.), method = 'auto', level = 0.9, color = "red") + 
+  labs(title = "Swing Percentage to Hard Contact", subtitle = "2019 MLB Season (Qualified At Bats)", x = "Swing Percentage", y = "Hard Contact Percentage")
 ```
 
 ```{r}
