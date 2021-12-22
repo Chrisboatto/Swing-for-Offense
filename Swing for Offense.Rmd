@@ -24,12 +24,14 @@ require(rpart)
 require(corrplot)
 require(ggplot2)
 require(pROC)
+require(caret)
 library(dplyr)
 library(stringr)
 library(rpart)
 library(corrplot)
 library(ggplot2)
 library(pROC)
+library(caret)
 ```
 
 # I pulled a data set from Fangraphs.com and uploaded it to my GitHub. I then imported the site to which the data is stored into the machine and read it into a CSV.
@@ -221,6 +223,6 @@ OffenseFull <- OffenseFull %>% mutate(OffenseDiff = OffensePred - BinaryOffense)
 ```
 
 ```{r}
-OffenseFull[order(-OffenseFull$OffensePred),]
+OffenseFull[order(-OffenseFull$OffenseDiff),]
 ```
 
